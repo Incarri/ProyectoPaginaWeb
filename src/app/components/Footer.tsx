@@ -13,7 +13,7 @@ export function Footer() {
               <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-lg">
                 <Home size={24} />
               </div>
-              <span className="text-xl">Inmobiliaria Premium</span>
+              <span className="text-xl">{agent.name}</span>
             </div>
             <p className="text-gray-400">
               Tu socio de confianza en el mercado inmobiliario. Haciendo realidad el sueño de tu hogar perfecto.
