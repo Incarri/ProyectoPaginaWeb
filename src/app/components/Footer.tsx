@@ -1,4 +1,5 @@
 import { Home, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, Twitter } from 'lucide-react';
+import { agent } from '../data/agent';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -63,18 +64,18 @@ export function Footer() {
               <li className="flex items-start gap-2">
                 <Phone size={18} className="mt-1 flex-shrink-0" />
                 <a href="tel:+34912345678" className="hover:text-white transition-colors">
-                  +34 912 345 678
+                  {agent.phone}
                 </a>
               </li>
               <li className="flex items-start gap-2">
                 <Mail size={18} className="mt-1 flex-shrink-0" />
                 <a href="mailto:contacto@inmobiliaria.com" className="hover:text-white transition-colors">
-                  contacto@inmobiliaria.com
+                  {agent.email}
                 </a>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin size={18} className="mt-1 flex-shrink-0" />
-                <span>Calle Gran Vía, 123<br />28013 Madrid, España</span>
+                {agent.Oficina}
               </li>
             </ul>
           </div>
@@ -123,7 +124,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-          <p>&copy; {currentYear} Inmobiliaria Premium. Todos los derechos reservados.</p>
+          <p>&copy; {currentYear} {agent.name}. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>
