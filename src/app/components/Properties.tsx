@@ -1,10 +1,11 @@
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { BedDouble, Bath, Square, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
-import { availableProperties, soldProperties } from "../data/properties";
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { fetchProperties } from '../../lib/propertiesService';
+import { AdminProperties } from './AdminProperties';
 
 export function Properties() {
 
@@ -33,6 +34,30 @@ export function Properties() {
       },
     ],
   };
+  
+  const [available, setAvailable] = useState<any[]>([]);
+  const [sold, setSold] = useState<any[]>([]);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  
+  useEffect(() => {
+    const handler = () => setShowAdminLogin(true);
+    window.addEventListener('open-admin-login', handler as EventListener);
+    return () => window.removeEventListener('open-admin-login', handler as EventListener);
+  }, []);
+  
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetchProperties();
+        setAvailable(res.available.length ? res.available : []);
+        setSold(res.sold.length ? res.sold : []);
+      } catch (e) {
+        console.error('Error cargando propiedades:', e);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <section id="propiedades" className="py-20 px-4 bg-white">
@@ -42,11 +67,46 @@ export function Properties() {
         {/* PROPIEDADES DISPONIBLES */}
         {/* ===================== */}
 
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 relative">
           <h2 className="text-4xl md:text-5xl mb-4">
             Propiedades Disponibles
           </h2>
+          {/* Admin lock moved to Navigation (subtle) */}
         </div>
+
+        {/* Admin login modal */}
+        {showAdminLogin && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAdminLogin(false)}></div>
+            <div className="bg-white rounded-lg p-6 z-60 w-96">
+              <h3 className="font-bold mb-2">Acceso Admin</h3>
+              <p className="text-sm text-gray-600 mb-4">Introduce la contraseña para acceder al panel.</p>
+              <div className="flex gap-2">
+                <input id="admin-pass" type="password" placeholder="Contraseña" className="flex-1 px-3 py-2 border rounded" />
+                <button
+                  className="bg-blue-600 text-white px-3 py-2 rounded"
+                  onClick={() => {
+                    const input = (document.getElementById('admin-pass') as HTMLInputElement)?.value;
+                    if (input === 'admin123') {
+                      setShowAdminLogin(false);
+                      setShowAdminPanel(true);
+                    } else {
+                      alert('Contraseña incorrecta');
+                    }
+                  }}
+                >Entrar</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAdminPanel && (
+          <AdminProperties onClose={() => { setShowAdminPanel(false); window.location.reload(); }} onReload={async () => {
+            const res = await fetchProperties();
+            setAvailable(res.available);
+            setSold(res.sold);
+          }} />
+        )}
 
         <div className="relative mb-24">
 
@@ -58,7 +118,7 @@ export function Properties() {
           </button>
 
           <Slider ref={availableSliderRef} {...settings}>
-            {availableProperties.map((property) => (
+            {(available.length ? available : []).map((property) => (
               <div key={property.id} className="px-4">
                 <div className="bg-white rounded-xl overflow-hidden shadow-lg">
                   <div className="relative h-64 overflow-hidden">
@@ -131,7 +191,7 @@ export function Properties() {
           </button>
 
           <Slider ref={soldSliderRef} {...settings}>
-            {soldProperties.map((property) => (
+            {(sold.length ? sold : []).map((property) => (
               <div key={property.id} className="px-4">
                 <div className="bg-white rounded-xl overflow-hidden shadow-lg">
                   <div className="relative h-64 overflow-hidden">
@@ -152,6 +212,28 @@ export function Properties() {
 
                   <div className="p-6">
                     <h3 className="text-xl mb-2">{property.title}</h3>
+
+                    <div className="flex items-center text-gray-600 mb-4">
+                      <MapPin size={16} className="mr-1" />
+                      <span>{property.location}</span>
+                    </div>
+
+                    <div className="flex justify-between text-gray-700 border-t pt-4">
+                      <div className="flex items-center">
+                        <BedDouble size={18} className="mr-2 text-blue-600" />
+                        <span>{property.beds} hab.</span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <Bath size={18} className="mr-2 text-blue-600" />
+                        <span>{property.baths} baños</span>
+                      </div>
+
+                      <div className="flex items-center">
+                        <Square size={18} className="mr-2 text-blue-600" />
+                        <span>{property.area} m²</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

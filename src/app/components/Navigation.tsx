@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Menu, X } from 'lucide-react';
+import { Home, Menu, X, Lock } from 'lucide-react';
 import { agent } from '../data/agent';
 
 export function Navigation() {
@@ -68,6 +68,13 @@ export function Navigation() {
                 {item.label}
               </button>
             ))}
+            <button
+              title="Admin"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-admin-login'))}
+              className={`text-gray-400 hover:text-gray-700 p-2 opacity-70 hover:opacity-100`}
+            >
+              <Lock size={18} />
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
