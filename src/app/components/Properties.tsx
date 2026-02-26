@@ -46,11 +46,23 @@ export function Properties() {
   const availableSliderRef = useRef<Slider | null>(null);
   const soldSliderRef = useRef<Slider | null>(null);
 
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia('(pointer: coarse)');
+    const update = () => setIsCoarsePointer(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  const slidesToShowBase = isCoarsePointer ? 1 : 3;
+
   const settings = {
     dots: false,
     infinite: true,
     speed: 500,
-    slidesToShow: 3,
+    slidesToShow: slidesToShowBase,
     slidesToScroll: 1,
     arrows: false,
     lazyLoad: 'ondemand' as const,
@@ -58,7 +70,7 @@ export function Properties() {
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: 2,
+          slidesToShow: isCoarsePointer ? 1 : 2,
           slidesToScroll: 1,
         },
       },
@@ -166,9 +178,9 @@ export function Properties() {
 
           <button
             onClick={() => availableSliderRef.current?.slickPrev()}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white hover:bg-blue-600 text-gray-800 hover:text-white rounded-full p-3 shadow-lg hidden md:block"
+            className="absolute left-2 md:left-0 top-1/2 -translate-y-1/2 md:-translate-x-4 z-10 bg-white/95 hover:bg-blue-600 text-gray-800 hover:text-white rounded-full p-2 md:p-3 shadow-lg"
           >
-            <ChevronLeft size={28} />
+            <ChevronLeft size={22} className="md:w-7 md:h-7" />
           </button>
 
           <Slider ref={availableSliderRef} {...settings}>
@@ -218,9 +230,9 @@ export function Properties() {
 
           <button
             onClick={() => availableSliderRef.current?.slickNext()}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white hover:bg-blue-600 text-gray-800 hover:text-white rounded-full p-3 shadow-lg hidden md:block"
+            className="absolute right-2 md:right-0 top-1/2 -translate-y-1/2 md:translate-x-4 z-10 bg-white/95 hover:bg-blue-600 text-gray-800 hover:text-white rounded-full p-2 md:p-3 shadow-lg"
           >
-            <ChevronRight size={28} />
+            <ChevronRight size={22} className="md:w-7 md:h-7" />
           </button>
 
         </div>
@@ -239,9 +251,9 @@ export function Properties() {
 
           <button
             onClick={() => soldSliderRef.current?.slickPrev()}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white hover:bg-green-600 text-gray-800 hover:text-white rounded-full p-3 shadow-lg hidden md:block"
+            className="absolute left-2 md:left-0 top-1/2 -translate-y-1/2 md:-translate-x-4 z-10 bg-white/95 hover:bg-green-600 text-gray-800 hover:text-white rounded-full p-2 md:p-3 shadow-lg"
           >
-            <ChevronLeft size={28} />
+            <ChevronLeft size={22} className="md:w-7 md:h-7" />
           </button>
 
           <Slider ref={soldSliderRef} {...settings}>
@@ -296,9 +308,9 @@ export function Properties() {
 
           <button
             onClick={() => soldSliderRef.current?.slickNext()}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white hover:bg-green-600 text-gray-800 hover:text-white rounded-full p-3 shadow-lg hidden md:block"
+            className="absolute right-2 md:right-0 top-1/2 -translate-y-1/2 md:translate-x-4 z-10 bg-white/95 hover:bg-green-600 text-gray-800 hover:text-white rounded-full p-2 md:p-3 shadow-lg"
           >
-            <ChevronRight size={28} />
+            <ChevronRight size={22} className="md:w-7 md:h-7" />
           </button>
 
         </div>
