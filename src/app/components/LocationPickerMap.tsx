@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import L, { type LeafletMouseEvent, type LatLngExpression } from 'leaflet';
 
 type Coordinates = { lat: number; lng: number };
 
@@ -25,7 +25,7 @@ function MapClickHandler({
   onSelect: (lat: number, lng: number) => void;
 }) {
   useMapEvents({
-    click(event) {
+    click(event: LeafletMouseEvent) {
       onSelect(event.latlng.lat, event.latlng.lng);
     },
   });
@@ -51,7 +51,7 @@ export function LocationPickerMap({
 }: Props) {
   const [isResolving, setIsResolving] = useState(false);
 
-  const center = useMemo(() => coordinates ?? LIMA_CENTER, [coordinates]);
+  const center = useMemo<LatLngExpression>(() => coordinates ?? LIMA_CENTER, [coordinates]);
 
   useEffect(() => {
     if (!query.trim()) return;
@@ -97,7 +97,7 @@ export function LocationPickerMap({
 
   return (
     <div className="rounded-lg overflow-hidden border">
-      <MapContainer center={center} zoom={14} className="w-full h-40 md:h-44" scrollWheelZoom>
+      <MapContainer center={center} zoom={14} className="w-full h-64 md:h-80" scrollWheelZoom>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

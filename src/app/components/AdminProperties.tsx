@@ -475,8 +475,8 @@ export function AdminProperties({ onClose, onReload }: Props) {
                   </div>
 
                   <div className="col-span-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <label className="inline-flex items-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 font-semibold">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <label className="inline-flex items-center gap-3 rounded-lg bg-slate-200 px-4 py-2 text-slate-900 font-semibold">
                         <input type="checkbox" name="sold" defaultChecked={!!editing?.sold} className="h-5 w-5 accent-blue-600" />
                         Marcar como VENDIDO
                       </label>
@@ -541,9 +541,9 @@ export function AdminProperties({ onClose, onReload }: Props) {
                     <div className="mt-2">
                       <div className="text-xs text-gray-500 mb-1">Vista previa</div>
                       {effectivePreview ? (
-                        <img src={effectivePreview} alt="preview" className="w-full h-48 object-cover rounded border" />
+                        <img src={effectivePreview} alt="preview" className="w-full h-64 object-cover rounded border" />
                       ) : (
-                        <div className="w-full h-48 rounded border flex items-center justify-center text-sm text-gray-500 bg-gray-50">
+                        <div className="w-full h-64 rounded border flex items-center justify-center text-sm text-gray-500 bg-gray-50">
                           Sin imagen seleccionada
                         </div>
                       )}
@@ -567,11 +567,15 @@ export function AdminProperties({ onClose, onReload }: Props) {
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-center gap-3">
-                  <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-8 py-3 text-lg font-semibold rounded-xl min-w-[180px]">
+                <div className="mt-5 w-full flex items-center justify-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-14 py-4 text-xl font-semibold rounded-xl min-w-[320px] shadow-sm"
+                  >
                     {submitting ? 'Guardando...' : (editing ? 'Actualizar' : 'Crear')}
                   </button>
-                  <button type="button" onClick={closeForm} className="px-4 py-2 border rounded">Cancelar</button>
+                  <button type="button" onClick={closeForm} className="px-4 py-2 border rounded-lg">Cancelar</button>
                 </div>
                 {message && (
                   <div
