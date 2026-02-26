@@ -92,3 +92,20 @@ body {
   color: #0f172a;
   border: 1px solid rgba(148, 163, 184, 0.35);
 }
+
+@media (max-width: 768px) {
+  .hero-image-pan {
+    animation: none;
+    transform: scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-image-pan,
+  .hero-fade-up,
+  .lift-hover {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

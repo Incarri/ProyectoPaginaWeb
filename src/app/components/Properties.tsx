@@ -3,9 +3,8 @@ import { BedDouble, Bath, Square, MapPin, ChevronLeft, ChevronRight } from 'luci
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import { useRef, useEffect, useState } from 'react';
+import { lazy, Suspense, useRef, useEffect, useState } from 'react';
 import { fetchProperties, type Property } from '../../lib/propertiesService';
-import { AdminProperties } from './AdminProperties';
 import { availableProperties as localAvailable, soldProperties as localSold } from '../data/properties';
 
 const PROPERTIES_CACHE_KEY = 'properties-cache-v1';
@@ -37,6 +36,10 @@ function writePropertiesCache(data: { available: Property[]; sold: Property[] })
     // Ignore quota/access errors and continue with in-memory state.
   }
 }
+
+const AdminProperties = lazy(() =>
+  import('./AdminProperties').then((m) => ({ default: m.AdminProperties }))
+);
 
 export function Properties() {
 
@@ -139,12 +142,14 @@ export function Properties() {
         )}
 
         {showAdminPanel && (
-          <AdminProperties onClose={() => { setShowAdminPanel(false); window.location.reload(); }} onReload={async () => {
-            const res = await fetchProperties();
-            setAvailable(res.available);
-            setSold(res.sold);
-            writePropertiesCache({ available: res.available, sold: res.sold });
-          }} />
+          <Suspense fallback={<div className="text-center py-8 text-slate-600">Cargando panel admin...</div>}>
+            <AdminProperties onClose={() => { setShowAdminPanel(false); window.location.reload(); }} onReload={async () => {
+              const res = await fetchProperties();
+              setAvailable(res.available);
+              setSold(res.sold);
+              writePropertiesCache({ available: res.available, sold: res.sold });
+            }} />
+          </Suspense>
         )}
 
         <div className="relative mb-24">
