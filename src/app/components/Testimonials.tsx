@@ -1,7 +1,10 @@
 import { Star, Send } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
+
+const TESTIMONIALS_CACHE_KEY = 'testimonials-cache-v1';
+const TESTIMONIALS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export function Testimonials() {
   const defaultTestimonials = [
@@ -43,7 +46,18 @@ export function Testimonials() {
     },
   ];
 
-  const [testimonials, setTestimonials] = useState<typeof defaultTestimonials>([]);
+  const [testimonials, setTestimonials] = useState<typeof defaultTestimonials>(() => {
+    try {
+      const raw = localStorage.getItem(TESTIMONIALS_CACHE_KEY);
+      if (!raw) return defaultTestimonials;
+      const parsed = JSON.parse(raw) as { timestamp: number; data: typeof defaultTestimonials };
+      if (!parsed?.timestamp || !Array.isArray(parsed?.data)) return defaultTestimonials;
+      if (Date.now() - parsed.timestamp > TESTIMONIALS_CACHE_TTL_MS) return defaultTestimonials;
+      return parsed.data.length ? parsed.data : defaultTestimonials;
+    } catch {
+      return defaultTestimonials;
+    }
+  });
   const [formData, setFormData] = useState({ name: '', role: '', text: '', rating: 5 });
   const [showForm, setShowForm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -59,14 +73,28 @@ export function Testimonials() {
 
   const loadTestimonials = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'testimonials'));
+      const testimonialsQuery = query(
+        collection(db, 'testimonials'),
+        orderBy('timestamp', 'desc'),
+        limit(12)
+      );
+      const querySnapshot = await getDocs(testimonialsQuery);
       const customTestimonials = querySnapshot.docs.map(doc => ({
         name: doc.data().name,
         role: doc.data().role,
         text: doc.data().text,
         rating: doc.data().rating,
       }));
-      setTestimonials([...defaultTestimonials, ...customTestimonials]);
+      const nextTestimonials = [...defaultTestimonials, ...customTestimonials];
+      setTestimonials(nextTestimonials);
+      try {
+        localStorage.setItem(
+          TESTIMONIALS_CACHE_KEY,
+          JSON.stringify({ timestamp: Date.now(), data: nextTestimonials })
+        );
+      } catch {
+        // Ignore quota/access errors.
+      }
     } catch (error) {
       console.error('Error cargando testimonios:', error);
       setTestimonials(defaultTestimonials);

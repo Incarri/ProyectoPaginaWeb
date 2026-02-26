@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Trash2, PlusCircle, Edit2 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
@@ -13,7 +13,6 @@ import {
 type Props = { onClose: () => void; onReload: () => void };
 
 export function AdminProperties({ onClose, onReload }: Props) {
-  const [loadingImport, setLoadingImport] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -21,6 +20,12 @@ export function AdminProperties({ onClose, onReload }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
+  const [imageMode, setImageMode] = useState<'file' | 'url'>('file');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [previewImage, setPreviewImage] = useState('');
 
   const load = async () => {
     try {
@@ -31,12 +36,20 @@ export function AdminProperties({ onClose, onReload }: Props) {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
+  useEffect(() => {
+    return () => {
+      if (previewImage.startsWith('blob:')) {
+        URL.revokeObjectURL(previewImage);
+      }
+    };
+  }, [previewImage]);
 
   const handleDelete = async (id: string) => {
-    // open confirm modal
-    setConfirmState({ open: true, kind: 'property', id, title: 'Eliminar propiedad', subtitle: 'Esta acción no se puede deshacer.' });
+    setConfirmState({ open: true, kind: 'property', id, title: 'Eliminar propiedad', subtitle: 'Esta accion no se puede deshacer.' });
   };
 
   // --- Testimonios admin ---
@@ -46,24 +59,33 @@ export function AdminProperties({ onClose, onReload }: Props) {
   const loadTestimonials = async () => {
     try {
       const snap = await getDocs(collection(db, 'testimonials'));
-      const items = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+      const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
       setTestimonials(items);
     } catch (e) {
       console.error('Error cargando testimonios (admin):', e);
     }
   };
 
-  useEffect(() => { loadTestimonials(); }, []);
+  useEffect(() => {
+    loadTestimonials();
+  }, []);
 
   const handleDeleteTestimonial = async (id: string) => {
-    setConfirmState({ open: true, kind: 'testimonial', id, title: 'Eliminar testimonio', subtitle: 'Esta acción no se puede deshacer.' });
+    setConfirmState({ open: true, kind: 'testimonial', id, title: 'Eliminar testimonio', subtitle: 'Esta accion no se puede deshacer.' });
   };
 
   // Confirm modal state
-  const [confirmState, setConfirmState] = useState<{ open: boolean; kind: 'property' | 'testimonial' | null; id?: string; title?: string; subtitle?: string }>({ open: false, kind: null });
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean;
+    kind: 'property' | 'testimonial' | null;
+    id?: string;
+    title?: string;
+    subtitle?: string;
+  }>({ open: false, kind: null });
 
   const doConfirmDelete = async () => {
     if (!confirmState.open || !confirmState.kind || !confirmState.id) return;
+
     if (confirmState.kind === 'property') {
       const id = confirmState.id;
       setLoadingDelete(id);
@@ -94,21 +116,54 @@ export function AdminProperties({ onClose, onReload }: Props) {
         setTimeout(() => setMessage(null), 3000);
       }
     }
+
     setConfirmState({ open: false, kind: null });
   };
 
   const closeConfirm = () => setConfirmState({ open: false, kind: null });
 
-  const openNew = () => { setEditing(null); setShowForm(true); };
+  const resetFormImageState = (existingImage = '') => {
+    if (previewImage.startsWith('blob:')) {
+      URL.revokeObjectURL(previewImage);
+    }
+    setSelectedFile(null);
+    setImageMode('file');
+    setImageUrlInput(existingImage || '');
+    setPreviewImage('');
+    setUploadProgress(null);
+  };
 
-  const openEdit = (p: any) => { setEditing(p); setShowForm(true); };
+  const closeForm = () => {
+    resetFormImageState('');
+    setEditing(null);
+    setShowForm(false);
+  };
+
+  const openNew = () => {
+    setEditing(null);
+    resetFormImageState('');
+    setShowForm(true);
+  };
+
+  const openEdit = (p: any) => {
+    setEditing(p);
+    resetFormImageState(p?.image || '');
+    setShowForm(true);
+  };
+
+  const effectivePreview = useMemo(() => {
+    if (imageMode === 'file') return previewImage || editing?.image || '';
+    return imageUrlInput.trim() || editing?.image || '';
+  }, [imageMode, previewImage, imageUrlInput, editing]);
 
   const handleSubmit = async (form: FormData) => {
     setSubmitting(true);
+    setUploadProgress(null);
+
     try {
-      const title = form.get('title') as string;
-      const price = form.get('price') as string;
-      const location = form.get('location') as string;
+      const title = (form.get('title') as string) || '';
+      const price = (form.get('price') as string) || '';
+      const location = (form.get('location') as string) || '';
       const beds = Number(form.get('beds')) || 0;
       const baths = Number(form.get('baths')) || 0;
       const area = Number(form.get('area')) || 0;
@@ -116,9 +171,20 @@ export function AdminProperties({ onClose, onReload }: Props) {
       const description = (form.get('description') as string) || '';
 
       let imageUrl = editing?.image || '';
-      const file = form.get('image') as File | null;
-      if (file && file.size > 0) {
-        imageUrl = await uploadPropertyImage(file);
+      const manualImageUrl = imageUrlInput.trim();
+
+      if (imageMode === 'file' && selectedFile) {
+        if (!selectedFile.type.startsWith('image/')) {
+          throw new Error('El archivo seleccionado no es una imagen valida.');
+        }
+        if (selectedFile.size > 8 * 1024 * 1024) {
+          throw new Error('La imagen supera 8MB. Usa una imagen mas pequena.');
+        }
+        imageUrl = await uploadPropertyImage(selectedFile, 'properties', (progress) => setUploadProgress(progress));
+      } else if (imageMode === 'url' && manualImageUrl) {
+        imageUrl = manualImageUrl;
+      } else if (!editing?.id) {
+        throw new Error('Debes subir una imagen o pegar una URL para crear la propiedad.');
       }
 
       const payload = { title, price, location, beds, baths, area, image: imageUrl, sold, description };
@@ -133,12 +199,14 @@ export function AdminProperties({ onClose, onReload }: Props) {
 
       await load();
       onReload();
-      setShowForm(false);
+      closeForm();
     } catch (e) {
       console.error(e);
-      setMessage('Error en la petición');
+      const errorMessage = e instanceof Error ? e.message : 'Error en la peticion';
+      setMessage(errorMessage);
     } finally {
       setSubmitting(false);
+      setUploadProgress(null);
       setTimeout(() => setMessage(null), 3000);
     }
   };
@@ -159,7 +227,7 @@ export function AdminProperties({ onClose, onReload }: Props) {
 
         <div className="mb-4 flex items-center gap-3">
           {message && <div className="text-sm text-green-600">{message}</div>}
-          <div className="text-sm text-gray-600">Las propiedades se cargan desde la colección <code>properties</code> en Firestore.</div>
+          <div className="text-sm text-gray-600">Las propiedades se cargan desde la coleccion <code>properties</code> en Firestore.</div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -177,7 +245,7 @@ export function AdminProperties({ onClose, onReload }: Props) {
                         <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Disponible</span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600">{p.location} • {p.price}</div>
+                    <div className="text-sm text-gray-600">{p.location} � {p.price}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => openEdit(p)} className="text-blue-600 hover:text-blue-800" title="Editar"><Edit2 size={16} /></button>
@@ -187,13 +255,12 @@ export function AdminProperties({ onClose, onReload }: Props) {
                   </div>
                 </div>
 
-                <div className="text-sm text-gray-700 mt-2">{p.beds} hab • {p.baths} baños • {p.area} m²</div>
+                <div className="text-sm text-gray-700 mt-2">{p.beds} hab � {p.baths} banos � {p.area} m2</div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Testimonios admin */}
         <div className="mt-8">
           <h4 className="text-lg font-semibold mb-3">Testimonios (Admin)</h4>
           <div className="space-y-3">
@@ -201,7 +268,7 @@ export function AdminProperties({ onClose, onReload }: Props) {
             {testimonials.map((t) => (
               <div key={t.id} className="border rounded p-3 bg-white flex justify-between items-start">
                 <div>
-                  <div className="font-semibold">{t.name} <span className="text-sm text-gray-500">· {t.role}</span></div>
+                  <div className="font-semibold">{t.name} <span className="text-sm text-gray-500">� {t.role}</span></div>
                   <div className="text-sm text-gray-700 italic">"{t.text}"</div>
                 </div>
                 <div className="flex items-start gap-2">
@@ -214,7 +281,6 @@ export function AdminProperties({ onClose, onReload }: Props) {
           </div>
         </div>
 
-        {/* Confirm modal */}
         {confirmState.open && (
           <div className="fixed inset-0 z-100 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/50" onClick={closeConfirm}></div>
@@ -231,13 +297,13 @@ export function AdminProperties({ onClose, onReload }: Props) {
 
         {showForm && (
           <div className="fixed inset-0 z-80 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setShowForm(false)}></div>
+            <div className="absolute inset-0 bg-black/40" onClick={closeForm}></div>
             <div className="bg-white rounded-lg shadow p-6 z-90 w-11/12 md:w-2/3 max-h-[90vh] overflow-auto">
               <h4 className="text-lg font-semibold mb-3">{editing ? 'Editar propiedad' : 'Nueva propiedad'}</h4>
               <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget as HTMLFormElement); await handleSubmit(fd); }}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Título</div>
+                    <div className="text-sm text-gray-700 mb-1">Titulo</div>
                     <input name="title" defaultValue={editing?.title || ''} className="w-full px-3 py-2 border rounded" required />
                   </label>
 
@@ -247,7 +313,7 @@ export function AdminProperties({ onClose, onReload }: Props) {
                   </label>
 
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Ubicación</div>
+                    <div className="text-sm text-gray-700 mb-1">Ubicacion</div>
                     <input name="location" defaultValue={editing?.location || ''} className="w-full px-3 py-2 border rounded" />
                   </label>
 
@@ -257,39 +323,107 @@ export function AdminProperties({ onClose, onReload }: Props) {
                   </label>
 
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Baños</div>
+                    <div className="text-sm text-gray-700 mb-1">Banos</div>
                     <input name="baths" type="number" defaultValue={editing?.baths || 0} className="w-full px-3 py-2 border rounded" />
                   </label>
 
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Área (m²)</div>
+                    <div className="text-sm text-gray-700 mb-1">Area (m2)</div>
                     <input name="area" type="number" defaultValue={editing?.area || 0} className="w-full px-3 py-2 border rounded" />
                   </label>
 
                   <label className="col-span-1 md:col-span-2 block">
-                    <div className="text-sm text-gray-700 mb-1">Descripción</div>
+                    <div className="text-sm text-gray-700 mb-1">Descripcion</div>
                     <textarea name="description" defaultValue={editing?.description || ''} className="w-full px-3 py-2 border rounded" />
                   </label>
 
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2"><input type="checkbox" name="sold" defaultChecked={!!editing?.sold} /> Vendido</label>
-                    <div>
-                      <div className="text-sm text-gray-700">Imagen</div>
-                      {editing?.image && <img src={editing.image} alt="preview" className="w-40 h-24 object-cover rounded mb-2" />}
-                      <input type="file" name="image" accept="image/*" />
+                  <div className="col-span-1 md:col-span-2">
+                    <div className="flex items-center gap-3 mb-3">
+                      <label className="flex items-center gap-2"><input type="checkbox" name="sold" defaultChecked={!!editing?.sold} /> Vendido</label>
                     </div>
+
+                    <div className="text-sm text-gray-700 mb-1">Imagen</div>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => setImageMode('file')}
+                        className={`px-3 py-1 rounded border ${imageMode === 'file' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700'}`}
+                      >
+                        Subir archivo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageMode('url')}
+                        className={`px-3 py-1 rounded border ${imageMode === 'url' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700'}`}
+                      >
+                        Pegar URL
+                      </button>
+                    </div>
+
+                    {imageMode === 'file' ? (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setSelectedFile(file);
+
+                          if (previewImage.startsWith('blob:')) {
+                            URL.revokeObjectURL(previewImage);
+                          }
+
+                          if (file) {
+                            const localPreview = URL.createObjectURL(file);
+                            setPreviewImage(localPreview);
+                          } else {
+                            setPreviewImage('');
+                          }
+                        }}
+                      />
+                    ) : (
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={imageUrlInput}
+                        onChange={(e) => {
+                          setImageUrlInput(e.target.value);
+                          setSelectedFile(null);
+                          if (previewImage.startsWith('blob:')) {
+                            URL.revokeObjectURL(previewImage);
+                          }
+                          setPreviewImage('');
+                        }}
+                        className="w-full px-3 py-2 border rounded"
+                      />
+                    )}
+
+                    <div className="mt-3">
+                      <div className="text-xs text-gray-500 mb-1">Vista previa</div>
+                      {effectivePreview ? (
+                        <img src={effectivePreview} alt="preview" className="w-full max-w-sm h-48 object-cover rounded border" />
+                      ) : (
+                        <div className="w-full max-w-sm h-48 rounded border flex items-center justify-center text-sm text-gray-500 bg-gray-50">
+                          Sin imagen seleccionada
+                        </div>
+                      )}
+                    </div>
+
+                    {submitting && uploadProgress !== null && (
+                      <div className="mt-2 text-sm text-blue-700">Subiendo imagen: {uploadProgress}%</div>
+                    )}
                   </div>
                 </div>
 
                 <div className="mt-4 flex gap-2">
-                  <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-4 py-2 rounded">{submitting ? 'Guardando...' : (editing ? 'Actualizar' : 'Crear')}</button>
-                  <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded">Cancelar</button>
+                  <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-4 py-2 rounded">
+                    {submitting ? 'Guardando...' : (editing ? 'Actualizar' : 'Crear')}
+                  </button>
+                  <button type="button" onClick={closeForm} className="px-4 py-2 border rounded">Cancelar</button>
                 </div>
               </form>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

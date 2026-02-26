@@ -1,6 +1,6 @@
 import { db, storage } from './firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { availableProperties as localAvailable, soldProperties as localSold } from '../app/data/properties';
 
 export type Property = {
@@ -51,10 +51,41 @@ export async function updateProperty(id: string, data: Partial<Property>): Promi
   await updateDoc(d, { ...data, timestamp: serverTimestamp() });
 }
 
-export async function uploadPropertyImage(file: File, folder = 'properties'): Promise<string> {
+export async function uploadPropertyImage(
+  file: File,
+  folder = 'properties',
+  onProgress?: (progress: number) => void
+): Promise<string> {
   const path = `${folder}/${Date.now()}_${file.name}`;
   const r = storageRef(storage, path);
-  const snap = await uploadBytes(r, file);
-  const url = await getDownloadURL(snap.ref);
-  return url;
+  const task = uploadBytesResumable(r, file);
+
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      task.cancel();
+      reject(new Error('Tiempo de espera agotado al subir la imagen.'));
+    }, 60000);
+
+    task.on(
+      'state_changed',
+      (snapshot) => {
+        if (!onProgress) return;
+        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        onProgress(progress);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      },
+      async () => {
+        try {
+          clearTimeout(timeoutId);
+          const url = await getDownloadURL(task.snapshot.ref);
+          resolve(url);
+        } catch (error) {
+          reject(error);
+        }
+      }
+    );
+  });
 }

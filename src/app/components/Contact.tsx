@@ -6,15 +6,29 @@ export function Contact() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
     message: '',
   });
 
+  const normalizePhone = (value: string) => value.replace(/[^\d]/g, '');
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí se manejaría el envío del formulario
-    alert('¡Gracias por tu mensaje! Me pondré en contacto contigo pronto.');
-    setFormData({ name: '', email: '', phone: '', message: '' });
+
+    const whatsappNumber = normalizePhone(agent.phone);
+    const lines = [
+      'Hola, vengo desde tu web inmobiliaria.',
+      '',
+      `Nombre: ${formData.name}`,
+      `Email: ${formData.email}`,
+      '',
+      `Mensaje: ${formData.message}`,
+    ];
+
+    const text = encodeURIComponent(lines.join('\n'));
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${text}`;
+
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    setFormData({ name: '', email: '', message: '' });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -28,24 +42,24 @@ export function Contact() {
     <section id="contacto" className="py-20 px-4 bg-white">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl mb-4">Contáctame</h2>
+          <h2 className="text-4xl md:text-5xl mb-4">Contactame</h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            ¿Listo para encontrar tu hogar ideal? Estoy aquí para ayudarte
+            Listo para encontrar tu hogar ideal? Estoy aqui para ayudarte
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-12">
           <div>
-            <h3 className="text-2xl mb-6">Información de Contacto</h3>
-            
+            <h3 className="text-2xl mb-6">Informacion de Contacto</h3>
+
             <div className="space-y-6">
               <div className="flex items-start">
                 <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mr-4 flex-shrink-0">
                   <Phone className="text-blue-600" size={24} />
                 </div>
                 <div>
-                  <div className="mb-1">Teléfono</div>
-                  <a href="tel:+34912345678" className="text-xl text-blue-600 hover:text-blue-700">
+                  <div className="mb-1">Telefono</div>
+                  <a href={`tel:${normalizePhone(agent.phone)}`} className="text-xl text-blue-600 hover:text-blue-700">
                     {agent.phone}
                   </a>
                 </div>
@@ -57,7 +71,7 @@ export function Contact() {
                 </div>
                 <div>
                   <div className="mb-1">Email</div>
-                  <a href="mailto:contacto@inmobiliaria.com" className="text-xl text-blue-600 hover:text-blue-700">
+                  <a href={`mailto:${agent.email}`} className="text-xl text-blue-600 hover:text-blue-700">
                     {agent.email}
                   </a>
                 </div>
@@ -77,14 +91,14 @@ export function Contact() {
             </div>
 
             <div className="mt-8 p-6 bg-blue-50 rounded-xl">
-              <h4 className="text-xl mb-3">Horario de Atención</h4>
+              <h4 className="text-xl mb-3">Horario de Atencion</h4>
               <div className="space-y-2 text-gray-700">
                 <div className="flex justify-between">
                   <span>Lunes - Viernes:</span>
                   <span>9:00 - 20:00</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Sábados:</span>
+                  <span>Sabados:</span>
                   <span>10:00 - 14:00</span>
                 </div>
                 <div className="flex justify-between">
@@ -96,7 +110,7 @@ export function Contact() {
           </div>
 
           <div>
-            <h3 className="text-2xl mb-6">Envíame un Mensaje</h3>
+            <h3 className="text-2xl mb-6">Enviame un Mensaje</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block mb-2 text-gray-700">
@@ -131,21 +145,6 @@ export function Contact() {
               </div>
 
               <div>
-                <label htmlFor="phone" className="block mb-2 text-gray-700">
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
-                  placeholder="+34 XXX XXX XXX"
-                />
-              </div>
-
-              <div>
                 <label htmlFor="message" className="block mb-2 text-gray-700">
                   Mensaje
                 </label>
@@ -157,7 +156,7 @@ export function Contact() {
                   required
                   rows={5}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none resize-none"
-                  placeholder="Cuéntame sobre tus necesidades inmobiliarias..."
+                  placeholder="Cuentame sobre tus necesidades inmobiliarias..."
                 />
               </div>
 

@@ -4,8 +4,39 @@ import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useRef, useEffect, useState } from 'react';
-import { fetchProperties } from '../../lib/propertiesService';
+import { fetchProperties, type Property } from '../../lib/propertiesService';
 import { AdminProperties } from './AdminProperties';
+import { availableProperties as localAvailable, soldProperties as localSold } from '../data/properties';
+
+const PROPERTIES_CACHE_KEY = 'properties-cache-v1';
+const PROPERTIES_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function readPropertiesCache(): { available: Property[]; sold: Property[] } | null {
+  try {
+    const raw = localStorage.getItem(PROPERTIES_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { timestamp: number; data: { available: Property[]; sold: Property[] } };
+    if (!parsed?.timestamp || !parsed?.data) return null;
+    if (Date.now() - parsed.timestamp > PROPERTIES_CACHE_TTL_MS) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writePropertiesCache(data: { available: Property[]; sold: Property[] }) {
+  try {
+    localStorage.setItem(
+      PROPERTIES_CACHE_KEY,
+      JSON.stringify({
+        timestamp: Date.now(),
+        data,
+      })
+    );
+  } catch {
+    // Ignore quota/access errors and continue with in-memory state.
+  }
+}
 
 export function Properties() {
 
@@ -19,6 +50,7 @@ export function Properties() {
     slidesToShow: 3,
     slidesToScroll: 3,
     arrows: false,
+    lazyLoad: 'ondemand' as const,
     responsive: [
       {
         breakpoint: 1024,
@@ -34,9 +66,10 @@ export function Properties() {
       },
     ],
   };
-  
-  const [available, setAvailable] = useState<any[]>([]);
-  const [sold, setSold] = useState<any[]>([]);
+
+  const cached = readPropertiesCache();
+  const [available, setAvailable] = useState<Property[]>(cached?.available ?? (localAvailable as unknown as Property[]));
+  const [sold, setSold] = useState<Property[]>(cached?.sold ?? (localSold as unknown as Property[]));
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   
@@ -50,8 +83,13 @@ export function Properties() {
     const load = async () => {
       try {
         const res = await fetchProperties();
-        setAvailable(res.available.length ? res.available : []);
-        setSold(res.sold.length ? res.sold : []);
+        const next = {
+          available: res.available.length ? res.available : [],
+          sold: res.sold.length ? res.sold : [],
+        };
+        setAvailable(next.available);
+        setSold(next.sold);
+        writePropertiesCache(next);
       } catch (e) {
         console.error('Error cargando propiedades:', e);
       }
@@ -105,6 +143,7 @@ export function Properties() {
             const res = await fetchProperties();
             setAvailable(res.available);
             setSold(res.sold);
+            writePropertiesCache({ available: res.available, sold: res.sold });
           }} />
         )}
 

@@ -1,6 +1,6 @@
 export const agent = {
   name: "Amparo Martinez",
-  phone: "+51 967 040 031",
+  phone: "+51 904 707 473",
   email: "amparo_ms30@hotmail.com",
   Oficina: "jiron joaquin torrico 726",
   description: [
