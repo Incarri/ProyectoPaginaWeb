@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+ï»¿import { useEffect, useMemo, useState } from 'react';
 import { Trash2, PlusCircle, Edit2 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
@@ -9,23 +9,38 @@ import {
   updateProperty,
   uploadPropertyImage,
 } from '../../lib/propertiesService';
+import { LocationPickerMap } from './LocationPickerMap';
 
 type Props = { onClose: () => void; onReload: () => void };
 
 export function AdminProperties({ onClose, onReload }: Props) {
   const [loadingDelete, setLoadingDelete] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('success');
 
   const [properties, setProperties] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadPhase, setUploadPhase] = useState<'idle' | 'uploading' | 'finalizing'>('idle');
+  const [formErrors, setFormErrors] = useState<{
+    title?: string;
+    price?: string;
+    location?: string;
+    beds?: string;
+    baths?: string;
+    area?: string;
+    image?: string;
+  }>({});
 
   const [imageMode, setImageMode] = useState<'file' | 'url'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [previewImage, setPreviewImage] = useState('');
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftLocation, setDraftLocation] = useState('');
+  const [draftCoords, setDraftCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const load = async () => {
     try {
@@ -52,7 +67,6 @@ export function AdminProperties({ onClose, onReload }: Props) {
     setConfirmState({ open: true, kind: 'property', id, title: 'Eliminar propiedad', subtitle: 'Esta accion no se puede deshacer.' });
   };
 
-  // --- Testimonios admin ---
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [loadingDeleteTestimonial, setLoadingDeleteTestimonial] = useState<string | null>(null);
 
@@ -74,7 +88,6 @@ export function AdminProperties({ onClose, onReload }: Props) {
     setConfirmState({ open: true, kind: 'testimonial', id, title: 'Eliminar testimonio', subtitle: 'Esta accion no se puede deshacer.' });
   };
 
-  // Confirm modal state
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     kind: 'property' | 'testimonial' | null;
@@ -89,13 +102,17 @@ export function AdminProperties({ onClose, onReload }: Props) {
     if (confirmState.kind === 'property') {
       const id = confirmState.id;
       setLoadingDelete(id);
+      setMessageType('info');
+      setMessage('Eliminando propiedad...');
       try {
         await deleteProperty(id);
+        setMessageType('success');
         setMessage('Propiedad eliminada');
         await load();
         onReload();
       } catch (e) {
         console.error(e);
+        setMessageType('error');
         setMessage('Error al eliminar');
       } finally {
         setLoadingDelete(null);
@@ -104,12 +121,16 @@ export function AdminProperties({ onClose, onReload }: Props) {
     } else if (confirmState.kind === 'testimonial') {
       const id = confirmState.id;
       setLoadingDeleteTestimonial(id);
+      setMessageType('info');
+      setMessage('Eliminando testimonio...');
       try {
         await deleteDoc(doc(db, 'testimonials', id));
+        setMessageType('success');
         setMessage('Testimonio eliminado');
         await loadTestimonials();
       } catch (e) {
         console.error('Error eliminando testimonio:', e);
+        setMessageType('error');
         setMessage('Error al eliminar testimonio');
       } finally {
         setLoadingDeleteTestimonial(null);
@@ -122,32 +143,41 @@ export function AdminProperties({ onClose, onReload }: Props) {
 
   const closeConfirm = () => setConfirmState({ open: false, kind: null });
 
-  const resetFormImageState = (existingImage = '') => {
+  const resetFormState = (existing: any | null = null) => {
     if (previewImage.startsWith('blob:')) {
       URL.revokeObjectURL(previewImage);
     }
     setSelectedFile(null);
     setImageMode('file');
-    setImageUrlInput(existingImage || '');
+    setImageUrlInput(existing?.image || '');
     setPreviewImage('');
     setUploadProgress(null);
+    setUploadPhase('idle');
+    setFormErrors({});
+    setDraftTitle(existing?.title || '');
+    setDraftLocation(existing?.location || '');
+    setDraftCoords(
+      typeof existing?.lat === 'number' && typeof existing?.lng === 'number'
+        ? { lat: existing.lat, lng: existing.lng }
+        : null
+    );
   };
 
   const closeForm = () => {
-    resetFormImageState('');
+    resetFormState(null);
     setEditing(null);
     setShowForm(false);
   };
 
   const openNew = () => {
     setEditing(null);
-    resetFormImageState('');
+    resetFormState(null);
     setShowForm(true);
   };
 
   const openEdit = (p: any) => {
     setEditing(p);
-    resetFormImageState(p?.image || '');
+    resetFormState(p);
     setShowForm(true);
   };
 
@@ -156,44 +186,115 @@ export function AdminProperties({ onClose, onReload }: Props) {
     return imageUrlInput.trim() || editing?.image || '';
   }, [imageMode, previewImage, imageUrlInput, editing]);
 
+  const mapQuery = draftLocation.trim();
+  const mapsUrl = mapQuery
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
+    : '';
+
   const handleSubmit = async (form: FormData) => {
     setSubmitting(true);
     setUploadProgress(null);
+    setUploadPhase('idle');
+    setFormErrors({});
 
     try {
       const title = (form.get('title') as string) || '';
       const price = (form.get('price') as string) || '';
       const location = (form.get('location') as string) || '';
-      const beds = Number(form.get('beds')) || 0;
-      const baths = Number(form.get('baths')) || 0;
-      const area = Number(form.get('area')) || 0;
+      const bedsRaw = Number(form.get('beds'));
+      const bathsRaw = Number(form.get('baths'));
+      const areaRaw = Number(form.get('area'));
+      const beds = Number.isFinite(bedsRaw) ? bedsRaw : 0;
+      const baths = Number.isFinite(bathsRaw) ? bathsRaw : 0;
+      const area = Number.isFinite(areaRaw) ? areaRaw : 0;
       const sold = form.get('sold') === 'on';
       const description = (form.get('description') as string) || '';
 
       let imageUrl = editing?.image || '';
       const manualImageUrl = imageUrlInput.trim();
 
-      if (imageMode === 'file' && selectedFile) {
-        if (!selectedFile.type.startsWith('image/')) {
-          throw new Error('El archivo seleccionado no es una imagen valida.');
-        }
-        if (selectedFile.size > 8 * 1024 * 1024) {
-          throw new Error('La imagen supera 8MB. Usa una imagen mas pequena.');
-        }
-        imageUrl = await uploadPropertyImage(selectedFile, 'properties', (progress) => setUploadProgress(progress));
-      } else if (imageMode === 'url' && manualImageUrl) {
-        imageUrl = manualImageUrl;
-      } else if (!editing?.id) {
-        throw new Error('Debes subir una imagen o pegar una URL para crear la propiedad.');
+      const errors: typeof formErrors = {};
+      if (!title.trim()) errors.title = 'El titulo es obligatorio.';
+      if (!price.trim()) errors.price = 'El precio es obligatorio.';
+      if (!location.trim()) errors.location = 'La ubicacion es obligatoria.';
+
+      const numericPrice = Number(price.replace(/[^\d.,-]/g, '').replace(',', '.'));
+      if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+        errors.price = 'El precio debe ser un numero mayor a 0.';
+      }
+      if (!Number.isFinite(beds) || beds <= 0) {
+        errors.beds = 'Las habitaciones deben ser mayores a 0.';
+      }
+      if (!Number.isFinite(baths) || baths <= 0) {
+        errors.baths = 'Los banos deben ser mayores a 0.';
+      }
+      if (!Number.isFinite(area) || area <= 0) {
+        errors.area = 'El area debe ser mayor a 0.';
       }
 
-      const payload = { title, price, location, beds, baths, area, image: imageUrl, sold, description };
+      if (imageMode === 'file' && selectedFile) {
+        if (!selectedFile.type.startsWith('image/')) {
+          errors.image = 'El archivo seleccionado no es una imagen valida.';
+        }
+        if (selectedFile.size > 8 * 1024 * 1024) {
+          errors.image = 'La imagen supera 8MB. Usa una imagen mas pequena.';
+        }
+      } else if (imageMode === 'url' && manualImageUrl) {
+        let parsedUrl: URL;
+        try {
+          parsedUrl = new URL(manualImageUrl);
+        } catch {
+          errors.image = 'La URL de la imagen no es valida. Usa una URL completa (https://...).';
+          parsedUrl = new URL('https://placeholder.local');
+        }
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+          errors.image = 'La URL de la imagen debe empezar con http:// o https://';
+        }
+        imageUrl = manualImageUrl;
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
+        setMessageType('error');
+        setMessage('Corrige los campos marcados e intenta nuevamente.');
+        return;
+      }
+
+      if (imageMode === 'file' && selectedFile) {
+        setUploadPhase('uploading');
+        setUploadProgress(1);
+        imageUrl = await uploadPropertyImage(selectedFile, 'properties', (progress) =>
+          setUploadProgress(Math.max(1, progress))
+        );
+        setUploadPhase('finalizing');
+        setUploadProgress(100);
+      }
+
+      const payload = {
+        title,
+        price,
+        location,
+        beds,
+        baths,
+        area,
+        image: imageUrl,
+        sold,
+        description,
+        lat: draftCoords?.lat,
+        lng: draftCoords?.lng,
+      };
 
       if (editing?.id) {
+        setMessageType('info');
+        setMessage('Actualizando propiedad...');
         await updateProperty(editing.id, payload);
+        setMessageType('success');
         setMessage('Propiedad actualizada');
       } else {
+        setMessageType('info');
+        setMessage('Creando propiedad...');
         await createProperty(payload as any);
+        setMessageType('success');
         setMessage('Propiedad creada');
       }
 
@@ -203,10 +304,12 @@ export function AdminProperties({ onClose, onReload }: Props) {
     } catch (e) {
       console.error(e);
       const errorMessage = e instanceof Error ? e.message : 'Error en la peticion';
+      setMessageType('error');
       setMessage(errorMessage);
     } finally {
       setSubmitting(false);
       setUploadProgress(null);
+      setUploadPhase('idle');
       setTimeout(() => setMessage(null), 3000);
     }
   };
@@ -214,7 +317,7 @@ export function AdminProperties({ onClose, onReload }: Props) {
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
-      <div className="bg-white rounded-lg shadow-xl p-6 z-70 w-11/12 md:w-3/4 max-h-[80vh] overflow-auto">
+      <div className="bg-white rounded-xl shadow-xl p-6 z-70 w-[96vw] max-w-[1700px] h-[94vh] overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold">Panel Admin - Propiedades</h3>
           <div className="flex items-center gap-2">
@@ -226,7 +329,17 @@ export function AdminProperties({ onClose, onReload }: Props) {
         </div>
 
         <div className="mb-4 flex items-center gap-3">
-          {message && <div className="text-sm text-green-600">{message}</div>}
+          {message && (
+            <div className={`text-sm ${
+              messageType === 'error'
+                ? 'text-red-600'
+                : messageType === 'info'
+                  ? 'text-blue-600'
+                  : 'text-green-600'
+            }`}>
+              {message}
+            </div>
+          )}
           <div className="text-sm text-gray-600">Las propiedades se cargan desde la coleccion <code>properties</code> en Firestore.</div>
         </div>
 
@@ -245,7 +358,7 @@ export function AdminProperties({ onClose, onReload }: Props) {
                         <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Disponible</span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600">{p.location} • {p.price}</div>
+                    <div className="text-sm text-gray-600">{p.location} â€¢ {p.price}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => openEdit(p)} className="text-blue-600 hover:text-blue-800" title="Editar"><Edit2 size={16} /></button>
@@ -255,7 +368,7 @@ export function AdminProperties({ onClose, onReload }: Props) {
                   </div>
                 </div>
 
-                <div className="text-sm text-gray-700 mt-2">{p.beds} hab • {p.baths} banos • {p.area} m2</div>
+                <div className="text-sm text-gray-700 mt-2">{p.beds} hab â€¢ {p.baths} banos â€¢ {p.area} m2</div>
               </div>
             </div>
           ))}
@@ -268,7 +381,7 @@ export function AdminProperties({ onClose, onReload }: Props) {
             {testimonials.map((t) => (
               <div key={t.id} className="border rounded p-3 bg-white flex justify-between items-start">
                 <div>
-                  <div className="font-semibold">{t.name} <span className="text-sm text-gray-500">· {t.role}</span></div>
+                  <div className="font-semibold">{t.name} <span className="text-sm text-gray-500">Â· {t.role}</span></div>
                   <div className="text-sm text-gray-700 italic">"{t.text}"</div>
                 </div>
                 <div className="flex items-start gap-2">
@@ -298,52 +411,79 @@ export function AdminProperties({ onClose, onReload }: Props) {
         {showForm && (
           <div className="fixed inset-0 z-80 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/40" onClick={closeForm}></div>
-            <div className="bg-white rounded-lg shadow p-6 z-90 w-11/12 md:w-2/3 max-h-[90vh] overflow-auto">
-              <h4 className="text-lg font-semibold mb-3">{editing ? 'Editar propiedad' : 'Nueva propiedad'}</h4>
-              <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget as HTMLFormElement); await handleSubmit(fd); }}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="bg-white rounded-xl shadow p-4 z-90 w-[96vw] max-w-[1700px] h-[94vh] overflow-auto">
+              <h4 className="text-lg font-semibold mb-2">{editing ? 'Editar propiedad' : 'Nueva propiedad'}</h4>
+              <form noValidate onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget as HTMLFormElement); await handleSubmit(fd); }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Titulo</div>
-                    <input name="title" defaultValue={editing?.title || ''} className="w-full px-3 py-2 border rounded" required />
+                    <div className="text-sm text-gray-700 mb-0.5">Titulo</div>
+                    <input name="title" value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} className="w-full px-3 py-1.5 border rounded" required />
+                    {formErrors.title && <div className="text-xs text-red-600 mt-1">{formErrors.title}</div>}
                   </label>
 
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Precio</div>
-                    <input name="price" defaultValue={editing?.price || ''} className="w-full px-3 py-2 border rounded" required />
+                    <div className="text-sm text-gray-700 mb-0.5">Precio</div>
+                    <input name="price" defaultValue={editing?.price || ''} className="w-full px-3 py-1.5 border rounded" required />
+                    {formErrors.price && <div className="text-xs text-red-600 mt-1">{formErrors.price}</div>}
                   </label>
 
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Ubicacion</div>
-                    <input name="location" defaultValue={editing?.location || ''} className="w-full px-3 py-2 border rounded" />
+                    <div className="text-sm text-gray-700 mb-0.5">Ubicacion</div>
+                    <input name="location" value={draftLocation} onChange={(e) => setDraftLocation(e.target.value)} className="w-full px-3 py-1.5 border rounded" />
+                    {formErrors.location && <div className="text-xs text-red-600 mt-1">{formErrors.location}</div>}
                   </label>
 
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Habitaciones</div>
-                    <input name="beds" type="number" defaultValue={editing?.beds || 0} className="w-full px-3 py-2 border rounded" />
+                    <div className="text-sm text-gray-700 mb-0.5">Habitaciones</div>
+                    <input name="beds" type="number" defaultValue={editing?.beds || 0} className="w-full px-3 py-1.5 border rounded" />
+                    {formErrors.beds && <div className="text-xs text-red-600 mt-1">{formErrors.beds}</div>}
                   </label>
 
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Banos</div>
-                    <input name="baths" type="number" defaultValue={editing?.baths || 0} className="w-full px-3 py-2 border rounded" />
+                    <div className="text-sm text-gray-700 mb-0.5">Banos</div>
+                    <input name="baths" type="number" defaultValue={editing?.baths || 0} className="w-full px-3 py-1.5 border rounded" />
+                    {formErrors.baths && <div className="text-xs text-red-600 mt-1">{formErrors.baths}</div>}
                   </label>
 
                   <label className="block">
-                    <div className="text-sm text-gray-700 mb-1">Area (m2)</div>
-                    <input name="area" type="number" defaultValue={editing?.area || 0} className="w-full px-3 py-2 border rounded" />
+                    <div className="text-sm text-gray-700 mb-0.5">Area (m2)</div>
+                    <input name="area" type="number" defaultValue={editing?.area || 0} className="w-full px-3 py-1.5 border rounded" />
+                    {formErrors.area && <div className="text-xs text-red-600 mt-1">{formErrors.area}</div>}
                   </label>
 
                   <label className="col-span-1 md:col-span-2 block">
-                    <div className="text-sm text-gray-700 mb-1">Descripcion</div>
-                    <textarea name="description" defaultValue={editing?.description || ''} className="w-full px-3 py-2 border rounded" />
+                    <div className="text-sm text-gray-700 mb-0.5">Descripcion</div>
+                    <textarea name="description" defaultValue={editing?.description || ''} className="w-full px-3 py-1.5 border rounded h-20 resize-none" />
                   </label>
 
-                  <div className="col-span-1 md:col-span-2">
-                    <div className="flex items-center gap-3 mb-3">
-                      <label className="flex items-center gap-2"><input type="checkbox" name="sold" defaultChecked={!!editing?.sold} /> Vendido</label>
+                  <div className="col-span-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm text-gray-700">Verificar ubicacion en mapa</div>
+                      {mapsUrl && (
+                        <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-700 hover:text-blue-800">
+                          Abrir en Google Maps
+                        </a>
+                      )}
+                    </div>
+
+                    <LocationPickerMap
+                      query={mapQuery}
+                      coordinates={draftCoords}
+                      onCoordinatesChange={setDraftCoords}
+                      onLocationChange={setDraftLocation}
+                    />
+                  </div>
+
+                  <div className="col-span-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <label className="inline-flex items-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 font-semibold">
+                        <input type="checkbox" name="sold" defaultChecked={!!editing?.sold} className="h-5 w-5 accent-blue-600" />
+                        Marcar como VENDIDO
+                      </label>
                     </div>
 
                     <div className="text-sm text-gray-700 mb-1">Imagen</div>
-                    <div className="flex flex-wrap gap-2 mb-3">
+                    <div className="flex flex-wrap gap-2 mb-2">
                       <button
                         type="button"
                         onClick={() => setImageMode('file')}
@@ -382,7 +522,7 @@ export function AdminProperties({ onClose, onReload }: Props) {
                       />
                     ) : (
                       <input
-                        type="url"
+                        type="text"
                         placeholder="https://..."
                         value={imageUrlInput}
                         onChange={(e) => {
@@ -393,33 +533,59 @@ export function AdminProperties({ onClose, onReload }: Props) {
                           }
                           setPreviewImage('');
                         }}
-                        className="w-full px-3 py-2 border rounded"
+                        className="w-full px-3 py-1.5 border rounded"
                       />
                     )}
+                    {formErrors.image && <div className="text-xs text-red-600 mt-1">{formErrors.image}</div>}
 
-                    <div className="mt-3">
+                    <div className="mt-2">
                       <div className="text-xs text-gray-500 mb-1">Vista previa</div>
                       {effectivePreview ? (
-                        <img src={effectivePreview} alt="preview" className="w-full max-w-sm h-48 object-cover rounded border" />
+                        <img src={effectivePreview} alt="preview" className="w-full h-48 object-cover rounded border" />
                       ) : (
-                        <div className="w-full max-w-sm h-48 rounded border flex items-center justify-center text-sm text-gray-500 bg-gray-50">
+                        <div className="w-full h-48 rounded border flex items-center justify-center text-sm text-gray-500 bg-gray-50">
                           Sin imagen seleccionada
                         </div>
                       )}
                     </div>
 
                     {submitting && uploadProgress !== null && (
-                      <div className="mt-2 text-sm text-blue-700">Subiendo imagen: {uploadProgress}%</div>
+                      <div className="mt-3 max-w-sm">
+                        <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-600 transition-all"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                        <div className="mt-1 text-xs text-blue-700">
+                          {uploadPhase === 'uploading'
+                            ? `Subiendo imagen: ${uploadProgress}%`
+                            : 'Finalizando subida...'}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-4 flex gap-2">
-                  <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-4 py-2 rounded">
+                <div className="mt-4 flex items-center justify-center gap-3">
+                  <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-8 py-3 text-lg font-semibold rounded-xl min-w-[180px]">
                     {submitting ? 'Guardando...' : (editing ? 'Actualizar' : 'Crear')}
                   </button>
                   <button type="button" onClick={closeForm} className="px-4 py-2 border rounded">Cancelar</button>
                 </div>
+                {message && (
+                  <div
+                    className={`mt-3 text-sm ${
+                      messageType === 'error'
+                        ? 'text-red-600'
+                        : messageType === 'info'
+                          ? 'text-blue-600'
+                          : 'text-green-600'
+                    }`}
+                  >
+                    {message}
+                  </div>
+                )}
               </form>
             </div>
           </div>

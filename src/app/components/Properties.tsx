@@ -6,6 +6,7 @@ import 'slick-carousel/slick/slick-theme.css';
 import { lazy, Suspense, useRef, useEffect, useState } from 'react';
 import { fetchProperties, type Property } from '../../lib/propertiesService';
 import { availableProperties as localAvailable, soldProperties as localSold } from '../data/properties';
+import { PropertyDetailModal } from './PropertyDetailModal';
 
 const PROPERTIES_CACHE_KEY = 'properties-cache-v1';
 const PROPERTIES_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -97,6 +98,7 @@ export function Properties() {
   const [sold, setSold] = useState<Property[]>(cached?.sold ?? (localSold as unknown as Property[]));
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   
   useEffect(() => {
     const handler = () => setShowAdminLogin(true);
@@ -174,6 +176,11 @@ export function Properties() {
           </Suspense>
         )}
 
+        <PropertyDetailModal
+          property={selectedProperty}
+          onClose={() => setSelectedProperty(null)}
+        />
+
         <div className="relative mb-24">
 
           <button
@@ -186,7 +193,10 @@ export function Properties() {
           <Slider ref={availableSliderRef} {...settings}>
             {(available.length ? available : []).map((property) => (
               <div key={property.id} className="px-2 md:px-4">
-                <div className="glass-card lift-hover rounded-2xl overflow-hidden">
+                <div
+                  className="glass-card lift-hover rounded-2xl overflow-hidden cursor-pointer"
+                  onClick={() => setSelectedProperty(property)}
+                >
                   <div className="relative h-64 overflow-hidden">
                     <ImageWithFallback
                       src={property.image}
@@ -222,6 +232,16 @@ export function Properties() {
                         <span>{property.area} m²</span>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedProperty(property);
+                      }}
+                      className="mt-4 modern-btn-ghost rounded-lg px-4 py-2 text-sm"
+                    >
+                      Ver detalle
+                    </button>
                   </div>
                 </div>
               </div>
@@ -259,7 +279,10 @@ export function Properties() {
           <Slider ref={soldSliderRef} {...settings}>
             {(sold.length ? sold : []).map((property) => (
               <div key={property.id} className="px-2 md:px-4">
-                <div className="glass-card lift-hover rounded-2xl overflow-hidden">
+                <div
+                  className="glass-card lift-hover rounded-2xl overflow-hidden cursor-pointer"
+                  onClick={() => setSelectedProperty(property)}
+                >
                   <div className="relative h-64 overflow-hidden">
                     <ImageWithFallback
                       src={property.image}
@@ -300,6 +323,16 @@ export function Properties() {
                         <span>{property.area} m²</span>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedProperty(property);
+                      }}
+                      className="mt-4 modern-btn-ghost rounded-lg px-4 py-2 text-sm"
+                    >
+                      Ver detalle
+                    </button>
                   </div>
                 </div>
               </div>

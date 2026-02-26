@@ -8,10 +8,13 @@ export type Property = {
   title: string;
   price: string;
   location: string;
+  lat?: number;
+  lng?: number;
   beds: number;
   baths: number;
   area: number;
   image: string;
+  description?: string;
   sold?: boolean;
   timestamp?: any;
 };
