@@ -3,3 +3,36 @@
 @import './theme.css';
 
 /* ===== SWIPER ESTILO LIMPIO INMOBILIARIA ===== */
+
+@keyframes heroImagePan {
+  0% {
+    transform: scale(1.03) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.08) translate3d(-1.25%, -1%, 0);
+  }
+  100% {
+    transform: scale(1.03) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes heroFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-image-pan {
+  animation: heroImagePan 18s ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.hero-fade-up {
+  animation: heroFadeUp 0.9s ease-out both;
+}
