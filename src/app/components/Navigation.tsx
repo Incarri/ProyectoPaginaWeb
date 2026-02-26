@@ -2,6 +2,20 @@ import { useState, useEffect } from 'react';
 import { Home, Menu, X, Lock } from 'lucide-react';
 import { agent } from '../data/agent';
 
+function scrollToSectionWithRetry(id: string, retries = 12) {
+  const attempt = (left: number) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (left > 0) {
+      setTimeout(() => attempt(left - 1), 120);
+    }
+  };
+  attempt(retries);
+}
+
 export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -15,12 +29,9 @@ export function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      setIsMobileMenuOpen(false);
-    }
+  const handleNavigate = (id: string) => {
+    scrollToSectionWithRetry(id);
+    setIsMobileMenuOpen(false);
   };
 
   const menuItems = [
@@ -59,7 +70,7 @@ export function Navigation() {
             {menuItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => scrollToSection(item.id)}
+                onClick={() => handleNavigate(item.id)}
                 className={`px-4 py-2 rounded-full text-sm transition-all ${
                   isScrolled
                     ? 'text-slate-700 hover:text-blue-700 hover:bg-blue-50'
@@ -95,7 +106,7 @@ export function Navigation() {
             {menuItems.map((item, index) => (
               <button
                 key={item.id}
-                onClick={() => scrollToSection(item.id)}
+                onClick={() => handleNavigate(item.id)}
                 className={`block w-full text-left px-6 py-4 text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition-colors ${
                   index !== menuItems.length - 1 ? 'border-b border-slate-200/70' : ''
                 }`}

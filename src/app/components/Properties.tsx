@@ -51,7 +51,7 @@ export function Properties() {
     infinite: true,
     speed: 500,
     slidesToShow: 3,
-    slidesToScroll: 3,
+    slidesToScroll: 1,
     arrows: false,
     lazyLoad: 'ondemand' as const,
     responsive: [
@@ -59,12 +59,22 @@ export function Properties() {
         breakpoint: 1024,
         settings: {
           slidesToShow: 2,
+          slidesToScroll: 1,
         },
       },
       {
         breakpoint: 768,
         settings: {
           slidesToShow: 1,
+          slidesToScroll: 1,
+        },
+      },
+      {
+        breakpoint: 480,
+        settings: {
+          slidesToShow: 1,
+          slidesToScroll: 1,
+          centerMode: false,
         },
       },
     ],
@@ -163,7 +173,7 @@ export function Properties() {
 
           <Slider ref={availableSliderRef} {...settings}>
             {(available.length ? available : []).map((property) => (
-              <div key={property.id} className="px-4">
+              <div key={property.id} className="px-2 md:px-4">
                 <div className="glass-card lift-hover rounded-2xl overflow-hidden">
                   <div className="relative h-64 overflow-hidden">
                     <ImageWithFallback
@@ -236,7 +246,7 @@ export function Properties() {
 
           <Slider ref={soldSliderRef} {...settings}>
             {(sold.length ? sold : []).map((property) => (
-              <div key={property.id} className="px-4">
+              <div key={property.id} className="px-2 md:px-4">
                 <div className="glass-card lift-hover rounded-2xl overflow-hidden">
                   <div className="relative h-64 overflow-hidden">
                     <ImageWithFallback

@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "dev:host": "vite --host",
+    "preview": "vite preview",
+    "preview:host": "vite preview --host"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

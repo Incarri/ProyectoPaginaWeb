@@ -1,11 +1,21 @@
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ChevronDown, Award, Building2, BadgeCheck } from 'lucide-react';
 
-export function Hero() {
-  const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+function scrollToSectionWithRetry(id: string, retries = 12) {
+  const attempt = (left: number) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (left > 0) {
+      setTimeout(() => attempt(left - 1), 120);
+    }
   };
+  attempt(retries);
+}
 
+export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       <div className="absolute inset-0 z-0 hero-image-pan">
@@ -36,13 +46,13 @@ export function Hero() {
 
           <div className="flex flex-col sm:flex-row gap-3 mb-10">
             <button
-              onClick={() => scrollToSection('contacto')}
+              onClick={() => scrollToSectionWithRetry('contacto')}
               className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl text-lg transition-all shadow-[0_16px_35px_rgba(37,99,235,0.45)] hover:scale-[1.02]"
             >
               Hablar por WhatsApp
             </button>
             <button
-              onClick={() => scrollToSection('propiedades')}
+              onClick={() => scrollToSectionWithRetry('propiedades')}
               className="bg-white/15 hover:bg-white/25 text-white px-8 py-4 rounded-xl text-lg border border-white/40 backdrop-blur-sm transition-all"
             >
               Ver propiedades
@@ -76,7 +86,7 @@ export function Hero() {
       </div>
 
       <button
-        onClick={() => scrollToSection('sobre-mi')}
+        onClick={() => scrollToSectionWithRetry('sobre-mi')}
         className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 text-white/90 animate-bounce"
         aria-label="Desplazar hacia abajo"
       >
