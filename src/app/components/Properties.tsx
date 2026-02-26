@@ -98,7 +98,7 @@ export function Properties() {
   }, []);
 
   return (
-    <section id="propiedades" className="py-20 px-4 bg-white">
+    <section id="propiedades" className="section-shell py-24 px-4 bg-transparent">
       <div className="max-w-7xl mx-auto">
 
         {/* ===================== */}
@@ -106,7 +106,7 @@ export function Properties() {
         {/* ===================== */}
 
         <div className="text-center mb-16 relative">
-          <h2 className="text-4xl md:text-5xl mb-4">
+          <h2 className="section-title mb-4">
             Propiedades Disponibles
           </h2>
           {/* Admin lock moved to Navigation (subtle) */}
@@ -159,14 +159,14 @@ export function Properties() {
           <Slider ref={availableSliderRef} {...settings}>
             {(available.length ? available : []).map((property) => (
               <div key={property.id} className="px-4">
-                <div className="bg-white rounded-xl overflow-hidden shadow-lg">
+                <div className="glass-card lift-hover rounded-2xl overflow-hidden">
                   <div className="relative h-64 overflow-hidden">
                     <ImageWithFallback
                       src={property.image}
                       alt={property.title}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg">
+                    <div className="absolute top-4 right-4 modern-btn-primary text-white px-4 py-2 rounded-xl text-sm">
                       {property.price}
                     </div>
                   </div>
@@ -179,7 +179,7 @@ export function Properties() {
                       <span>{property.location}</span>
                     </div>
 
-                    <div className="flex justify-between text-gray-700 border-t pt-4">
+                    <div className="flex justify-between text-gray-700 border-t border-slate-200/70 pt-4">
                       <div className="flex items-center">
                         <BedDouble size={18} className="mr-2 text-blue-600" />
                         <span>{property.beds} hab.</span>
@@ -215,7 +215,7 @@ export function Properties() {
         {/* ===================== */}
 
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl mb-4">
+          <h2 className="section-title mb-4">
             Propiedades Vendidas
           </h2>
         </div>
@@ -232,7 +232,7 @@ export function Properties() {
           <Slider ref={soldSliderRef} {...settings}>
             {(sold.length ? sold : []).map((property) => (
               <div key={property.id} className="px-4">
-                <div className="bg-white rounded-xl overflow-hidden shadow-lg">
+                <div className="glass-card lift-hover rounded-2xl overflow-hidden">
                   <div className="relative h-64 overflow-hidden">
                     <ImageWithFallback
                       src={property.image}
@@ -240,11 +240,11 @@ export function Properties() {
                       className="w-full h-full object-cover"
                     />
 
-                    <div className="absolute top-4 left-4 bg-green-600 text-white px-3 py-1 rounded-lg text-sm">
+                    <div className="absolute top-4 left-4 bg-emerald-600 text-white px-3 py-1 rounded-xl text-sm">
                       Vendido
                     </div>
 
-                    <div className="absolute top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg">
+                    <div className="absolute top-4 right-4 bg-slate-900/90 text-white px-4 py-2 rounded-xl text-sm">
                       {property.price}
                     </div>
                   </div>
@@ -257,7 +257,7 @@ export function Properties() {
                       <span>{property.location}</span>
                     </div>
 
-                    <div className="flex justify-between text-gray-700 border-t pt-4">
+                    <div className="flex justify-between text-gray-700 border-t border-slate-200/70 pt-4">
                       <div className="flex items-center">
                         <BedDouble size={18} className="mr-2 text-blue-600" />
                         <span>{property.beds} hab.</span>

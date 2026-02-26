@@ -4,59 +4,59 @@ export function Services() {
   const services = [
     {
       icon: Search,
-      title: 'Búsqueda Personalizada',
-      description: 'Te ayudo a encontrar la propiedad perfecta según tus necesidades, presupuesto y preferencias.',
+      title: 'Busqueda personalizada',
+      description: 'Te ayudo a encontrar la propiedad perfecta segun tus necesidades, presupuesto y preferencias.',
     },
     {
       icon: DollarSign,
-      title: 'Valoración de Propiedades',
-      description: 'Análisis detallado del mercado para determinar el valor real de tu propiedad y maximizar tu inversión.',
+      title: 'Valoracion de propiedades',
+      description: 'Analisis detallado del mercado para determinar el valor real de tu propiedad y maximizar tu inversion.',
     },
     {
       icon: FileText,
-      title: 'Gestión Documental',
-      description: 'Me encargo de todos los trámites legales y documentación necesaria para una transacción segura.',
+      title: 'Gestion documental',
+      description: 'Me encargo de los tramites legales y documentacion necesaria para una transaccion segura.',
     },
     {
       icon: Key,
-      title: 'Venta de Propiedades',
+      title: 'Venta de propiedades',
       description: 'Estrategias de marketing efectivas para vender tu propiedad al mejor precio en el menor tiempo.',
     },
     {
       icon: HeadphonesIcon,
       title: 'Asesoramiento 24/7',
-      description: 'Estoy disponible para resolver todas tus dudas y acompañarte en cada paso del proceso.',
+      description: 'Estoy disponible para resolver dudas y acompanarte en cada paso del proceso.',
     },
     {
       icon: TrendingUp,
-      title: 'Inversión Inmobiliaria',
+      title: 'Inversion inmobiliaria',
       description: 'Asesoramiento experto para invertir en propiedades con alto potencial de rentabilidad.',
     },
   ];
 
   return (
-    <section id="servicios" className="py-20 px-4 bg-gray-50">
+    <section id="servicios" className="section-shell py-24 px-4 bg-gradient-to-b from-slate-50/90 to-white">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl mb-4">Mis Servicios</h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Ofrezco una gama completa de servicios inmobiliarios diseñados para hacer realidad tus objetivos
+        <div className="text-center mb-14">
+          <h2 className="section-title mb-4">Servicios Que Hacen Diferencia</h2>
+          <p className="section-subtitle max-w-3xl mx-auto">
+            Un servicio integral para que tomes decisiones inmobiliarias con seguridad, estrategia y resultados.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((service, index) => {
             const Icon = service.icon;
             return (
               <div
                 key={index}
-                className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+                className="glass-card lift-hover rounded-2xl p-8"
               >
-                <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 rounded-lg mb-4">
-                  <Icon className="text-blue-600" size={28} />
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4 modern-btn-ghost">
+                  <Icon className="text-blue-700" size={28} />
                 </div>
-                <h3 className="text-xl mb-3">{service.title}</h3>
-                <p className="text-gray-600">{service.description}</p>
+                <h3 className="text-xl text-slate-900 mb-3">{service.title}</h3>
+                <p className="text-slate-600 leading-relaxed">{service.description}</p>
               </div>
             );
           })}

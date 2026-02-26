@@ -4,28 +4,27 @@ import { agent } from '../data/agent';
 
 export function About() {
   const stats = [
-    { icon: Home, value: '500+', label: 'Propiedades Vendidas' },
-    { icon: Users, value: '1000+', label: 'Clientes Satisfechos' },
-    { icon: Award, value: '15+', label: 'Años de Experiencia' },
-    { icon: TrendingUp, value: '98%', label: 'Tasa de Éxito' },
+    { icon: Home, value: '500+', label: 'Propiedades vendidas' },
+    { icon: Users, value: '1000+', label: 'Clientes felices' },
+    { icon: Award, value: '15+', label: 'Anos de experiencia' },
+    { icon: TrendingUp, value: '98%', label: 'Tasa de exito' },
   ];
 
   return (
-    <section id="sobre-mi" className="py-20 px-4 bg-white">
+    <section id="sobre-mi" className="section-shell py-24 px-4 bg-transparent">
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
           <div>
-            <h2 className="text-4xl md:text-5xl mb-6">Sobre Mí</h2>
-            <p className="text-lg text-gray-700 mb-4 whitespace-pre-line"> 
+            <h2 className="section-title mb-6">Sobre Mi</h2>
+            <div className="section-subtitle space-y-4 leading-relaxed">
               {agent.description.map((paragraph, index) => (
-                <p key={index} className="mb-4">
-                  {paragraph}
-                </p>
+                <p key={index}>{paragraph}</p>
               ))}
-            </p>
+            </div>
           </div>
+
           <div className="relative">
-            <div className="rounded-2xl overflow-hidden shadow-2xl">
+            <div className="rounded-3xl overflow-hidden border border-slate-200/80 shadow-[0_25px_55px_rgba(15,23,42,0.16)]">
               <ImageWithFallback
                 src="https://images.unsplash.com/photo-1763478958776-ebd04b6459ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjByZWFsJTIwZXN0YXRlJTIwYWdlbnQlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NzE0OTU4NTN8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
                 alt="Agente inmobiliario"
@@ -35,16 +34,16 @@ export function About() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                  <Icon className="text-blue-600" size={32} />
+              <div key={index} className="glass-card lift-hover rounded-2xl p-6 text-center">
+                <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 rounded-2xl mb-3">
+                  <Icon className="text-blue-700" size={28} />
                 </div>
-                <div className="text-3xl md:text-4xl mb-2">{stat.value}</div>
-                <div className="text-gray-600">{stat.label}</div>
+                <div className="text-3xl md:text-4xl text-slate-900 mb-1">{stat.value}</div>
+                <div className="text-slate-600 text-sm">{stat.label}</div>
               </div>
             );
           })}
