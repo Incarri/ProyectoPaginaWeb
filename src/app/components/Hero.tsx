@@ -1,5 +1,12 @@
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ChevronDown, Award, Building2, BadgeCheck } from 'lucide-react';
+import { agent } from '../data/agent';
+
+const whatsappNumber = agent.phone.replace(/[^\d]/g, '');
+const whatsappMessage = encodeURIComponent(
+  'Hola, vi tu página web inmobiliaria y me gustaría recibir más información.'
+);
+const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
 function scrollToSectionWithRetry(id: string, retries = 12) {
   const attempt = (left: number) => {
@@ -45,12 +52,14 @@ export function Hero() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 mb-10">
-            <button
-              onClick={() => scrollToSectionWithRetry('contacto')}
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl text-lg transition-all shadow-[0_16px_35px_rgba(37,99,235,0.45)] hover:scale-[1.02]"
             >
               Hablar por WhatsApp
-            </button>
+            </a>
             <button
               onClick={() => scrollToSectionWithRetry('propiedades')}
               className="bg-white/15 hover:bg-white/25 text-white px-8 py-4 rounded-xl text-lg border border-white/40 backdrop-blur-sm transition-all"
@@ -65,7 +74,7 @@ export function Hero() {
                 <Award size={18} />
                 <span className="text-sm">Experiencia</span>
               </div>
-              <div className="text-2xl text-white">15+ anos</div>
+              <div className="text-2xl text-white">15+ años</div>
             </div>
             <div className="rounded-2xl border border-white/25 bg-white/10 backdrop-blur-md p-4">
               <div className="flex items-center gap-2 text-amber-200 mb-1">

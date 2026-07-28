@@ -39,7 +39,6 @@ export function Navigation() {
     { id: 'servicios', label: 'Servicios' },
     { id: 'propiedades', label: 'Propiedades' },
     { id: 'testimonios', label: 'Testimonios' },
-    { id: 'contacto', label: 'Contacto' },
   ];
 
   return (

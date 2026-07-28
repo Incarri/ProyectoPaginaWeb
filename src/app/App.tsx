@@ -6,7 +6,6 @@ const About = lazy(() => import('./components/About').then((m) => ({ default: m.
 const Services = lazy(() => import('./components/Services').then((m) => ({ default: m.Services })));
 const Properties = lazy(() => import('./components/Properties').then((m) => ({ default: m.Properties })));
 const Testimonials = lazy(() => import('./components/Testimonials').then((m) => ({ default: m.Testimonials })));
-const Contact = lazy(() => import('./components/Contact').then((m) => ({ default: m.Contact })));
 const Footer = lazy(() => import('./components/Footer').then((m) => ({ default: m.Footer })));
 
 function SectionFallback() {
@@ -23,7 +22,6 @@ export default function App() {
         <Services />
         <Properties />
         <Testimonials />
-        <Contact />
         <Footer />
       </Suspense>
     </div>
