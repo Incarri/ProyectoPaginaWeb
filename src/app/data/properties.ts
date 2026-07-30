@@ -61,46 +61,4 @@ export const availableProperties  = [
   },
 ]
 
-export const soldProperties = [
-  {
-    id: 101,
-    image: 'https://images.unsplash.com/photo-1568115286680-d203e08a8be6?...',
-    title: 'Penthouse en San Isidro',
-    location: 'San Isidro, Lima',
-    price: '$890,000',
-    beds: 4,
-    baths: 3,
-    area: 220,
-  },
-  {
-    id: 102,
-    image: 'https://images.unsplash.com/photo-1764339838883-4728d4bcfe49?...',
-    title: 'Residencia en La Molina 1',
-    location: 'La Molina, Lima',
-    price: '$780,000',
-    beds: 5,
-    baths: 4,
-    area: 380,
-  },
-  {
-    id: 103,
-    image: 'https://images.unsplash.com/photo-1764339838883-4728d4bcfe49?...',
-    title: 'Residencia en La Molina 2',
-    location: 'La Molina, Lima',
-    price: '$780,000',
-    beds: 5,
-    baths: 4,
-    area: 380,
-  },
-  {
-    id: 104,
-    image: 'https://images.unsplash.com/photo-1764339838883-4728d4bcfe49?...',
-    title: 'Residencia en La Molina 3',
-    location: 'La Molina, Lima',
-    price: '$780,000',
-    beds: 5,
-    baths: 4,
-    area: 380,
-  }
-  
-];
+export const soldProperties = [];

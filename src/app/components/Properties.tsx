@@ -10,6 +10,7 @@ import { PropertyDetailModal } from './PropertyDetailModal';
 
 const PROPERTIES_CACHE_KEY = 'properties-cache-v1';
 const PROPERTIES_CACHE_TTL_MS = 5 * 60 * 1000;
+const SHOW_SOLD_PROPERTIES = false;
 
 function readPropertiesCache(): { available: Property[]; sold: Property[] } | null {
   try {
@@ -181,7 +182,7 @@ export function Properties() {
           onClose={() => setSelectedProperty(null)}
         />
 
-        <div className="relative mb-24">
+        <div className={`relative ${SHOW_SOLD_PROPERTIES ? 'mb-24' : ''}`}>
 
           <button
             onClick={() => availableSliderRef.current?.slickPrev()}
@@ -257,97 +258,100 @@ export function Properties() {
 
         </div>
 
-        {/* ===================== */}
-        {/* PROPIEDADES VENDIDAS */}
-        {/* ===================== */}
+        {SHOW_SOLD_PROPERTIES && (
+          <>
+            {/* ===================== */}
+            {/* PROPIEDADES VENDIDAS */}
+            {/* ===================== */}
 
-        <div className="text-center mb-16">
-          <h2 className="section-title mb-4">
-            Propiedades Vendidas
-          </h2>
-        </div>
+            <div className="text-center mb-16">
+              <h2 className="section-title mb-4">
+                Propiedades Vendidas
+              </h2>
+            </div>
 
-        <div className="relative">
+            <div className="relative">
 
-          <button
-            onClick={() => soldSliderRef.current?.slickPrev()}
-            className="absolute left-2 md:left-0 top-1/2 -translate-y-1/2 md:-translate-x-4 z-10 bg-white/95 hover:bg-green-600 text-gray-800 hover:text-white rounded-full p-2 md:p-3 shadow-lg"
-          >
-            <ChevronLeft size={22} className="md:w-7 md:h-7" />
-          </button>
+              <button
+                onClick={() => soldSliderRef.current?.slickPrev()}
+                className="absolute left-2 md:left-0 top-1/2 -translate-y-1/2 md:-translate-x-4 z-10 bg-white/95 hover:bg-green-600 text-gray-800 hover:text-white rounded-full p-2 md:p-3 shadow-lg"
+              >
+                <ChevronLeft size={22} className="md:w-7 md:h-7" />
+              </button>
 
-          <Slider ref={soldSliderRef} {...settings}>
-            {(sold.length ? sold : []).map((property) => (
-              <div key={property.id} className="px-2 md:px-4">
-                <div
-                  className="glass-card lift-hover rounded-2xl overflow-hidden cursor-pointer"
-                  onClick={() => setSelectedProperty(property)}
-                >
-                  <div className="relative h-64 overflow-hidden">
-                    <ImageWithFallback
-                      src={property.image}
-                      alt={property.title}
-                      className="w-full h-full object-cover"
-                    />
-
-                    <div className="absolute top-4 left-4 bg-emerald-600 text-white px-3 py-1 rounded-xl text-sm">
-                      Vendido
-                    </div>
-
-                    <div className="absolute top-4 right-4 bg-slate-900/90 text-white px-4 py-2 rounded-xl text-sm">
-                      {property.price}
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <h3 className="text-xl mb-2">{property.title}</h3>
-
-                    <div className="flex items-center text-gray-600 mb-4">
-                      <MapPin size={16} className="mr-1" />
-                      <span>{property.location}</span>
-                    </div>
-
-                    <div className="flex justify-between text-gray-700 border-t border-slate-200/70 pt-4">
-                      <div className="flex items-center">
-                        <BedDouble size={18} className="mr-2 text-blue-600" />
-                        <span>{property.beds} hab.</span>
-                      </div>
-
-                      <div className="flex items-center">
-                        <Bath size={18} className="mr-2 text-blue-600" />
-                        <span>{property.baths} baños</span>
-                      </div>
-
-                      <div className="flex items-center">
-                        <Square size={18} className="mr-2 text-blue-600" />
-                        <span>{property.area} m²</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedProperty(property);
-                      }}
-                      className="mt-4 modern-btn-ghost rounded-lg px-4 py-2 text-sm"
+              <Slider ref={soldSliderRef} {...settings}>
+                {(sold.length ? sold : []).map((property) => (
+                  <div key={property.id} className="px-2 md:px-4">
+                    <div
+                      className="glass-card lift-hover rounded-2xl overflow-hidden cursor-pointer"
+                      onClick={() => setSelectedProperty(property)}
                     >
-                      Ver detalle
-                    </button>
+                      <div className="relative h-64 overflow-hidden">
+                        <ImageWithFallback
+                          src={property.image}
+                          alt={property.title}
+                          className="w-full h-full object-cover"
+                        />
+
+                        <div className="absolute top-4 left-4 bg-emerald-600 text-white px-3 py-1 rounded-xl text-sm">
+                          Vendido
+                        </div>
+
+                        <div className="absolute top-4 right-4 bg-slate-900/90 text-white px-4 py-2 rounded-xl text-sm">
+                          {property.price}
+                        </div>
+                      </div>
+
+                      <div className="p-6">
+                        <h3 className="text-xl mb-2">{property.title}</h3>
+
+                        <div className="flex items-center text-gray-600 mb-4">
+                          <MapPin size={16} className="mr-1" />
+                          <span>{property.location}</span>
+                        </div>
+
+                        <div className="flex justify-between text-gray-700 border-t border-slate-200/70 pt-4">
+                          <div className="flex items-center">
+                            <BedDouble size={18} className="mr-2 text-blue-600" />
+                            <span>{property.beds} hab.</span>
+                          </div>
+
+                          <div className="flex items-center">
+                            <Bath size={18} className="mr-2 text-blue-600" />
+                            <span>{property.baths} baños</span>
+                          </div>
+
+                          <div className="flex items-center">
+                            <Square size={18} className="mr-2 text-blue-600" />
+                            <span>{property.area} m²</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedProperty(property);
+                          }}
+                          className="mt-4 modern-btn-ghost rounded-lg px-4 py-2 text-sm"
+                        >
+                          Ver detalle
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </Slider>
+                ))}
+              </Slider>
 
-          <button
-            onClick={() => soldSliderRef.current?.slickNext()}
-            className="absolute right-2 md:right-0 top-1/2 -translate-y-1/2 md:translate-x-4 z-10 bg-white/95 hover:bg-green-600 text-gray-800 hover:text-white rounded-full p-2 md:p-3 shadow-lg"
-          >
-            <ChevronRight size={22} className="md:w-7 md:h-7" />
-          </button>
+              <button
+                onClick={() => soldSliderRef.current?.slickNext()}
+                className="absolute right-2 md:right-0 top-1/2 -translate-y-1/2 md:translate-x-4 z-10 bg-white/95 hover:bg-green-600 text-gray-800 hover:text-white rounded-full p-2 md:p-3 shadow-lg"
+              >
+                <ChevronRight size={22} className="md:w-7 md:h-7" />
+              </button>
 
-        </div>
-
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
